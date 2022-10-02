@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import { AiOutlineSearch } from 'react-icons/ai';
 
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
@@ -8,44 +8,40 @@ import button from './Button.module.css';
 import label from './Button.module.css';
 import input from './SearchInput.module.css';
 
-export class Searchbar extends Component {
-  state = {
-    searchName: '',
+export function Searchbar({ onSubmit }) {
+  const [searchName, setSearchName] = useState('');
+
+  const handleChangeName = e => {
+    setSearchName(e.currentTarget.value.toLowerCase());
   };
 
-  handleChangeName = e => {
-    this.setState({ searchName: e.currentTarget.value.toLowerCase() });
-  };
-
-  handleSubmit = e => {
+  const handleSubmit = e => {
     e.preventDefault();
-    if (this.state.searchName.trim() === '') {
+    if (searchName.trim() === '') {
       return Notify.warning('Заполни поле для поиска');
     }
-    this.props.onSubmit(this.state.searchName);
-    this.setState({ searchName: '' });
+    onSubmit(searchName);
+    setSearchName('');
   };
 
-  render() {
-    return (
-      <header className={searchbar.searchbar}>
-        <form onSubmit={this.handleSubmit} className={form.searchForm}>
-          <button type="submit" className={button.searchFormButton}>
-            <AiOutlineSearch size="32" />
-            <span className={label.searchFormButtonLabel}>Search</span>
-          </button>
+  return (
+    <header className={searchbar.searchbar}>
+      <form onSubmit={handleSubmit} className={form.searchForm}>
+        <button type="submit" className={button.searchFormButton}>
+          <AiOutlineSearch size="32" />
+          <span className={label.searchFormButtonLabel}>Search</span>
+        </button>
 
-          <input
-            onChange={this.handleChangeName}
-            className={input.searchFormInput}
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            value={this.state.searchName}
-          />
-        </form>
-      </header>
-    );
-  }
+        <input
+          onChange={handleChangeName}
+          className={input.searchFormInput}
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          value={searchName}
+        />
+      </form>
+    </header>
+  );
 }
