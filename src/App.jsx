@@ -1,7 +1,7 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 
 import { fetch } from 'components/fetch/fetch.jsx';
-// import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
 import { Searchbar } from './components/Searchbar/Searchbar.jsx';
 import { ImageGallery } from './components/ImageGallery/ImageGallery.jsx';
@@ -10,77 +10,62 @@ import { Loader } from 'components/Loader/Loader.jsx';
 import { Modal } from 'components/Modal/Modal.jsx';
 import app from './App.module.css';
 
-export default class App extends Component {
-  state = {
-    searchName: '',
-    response: [],
-    page: 1,
-    isLoading: false,
-    isModalOpen: false,
-    modalImage: '',
-  };
+export default function App() {
+  const [searchName, setSearchName] = useState('');
+  const [response, setResponse] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState('');
 
-  componentDidUpdate(_, prevState) {
-    const { searchName, page } = this.state;
-    if (prevState.searchName !== searchName || prevState.page !== page) {
-      this.setState({ isLoading: true });
-
-      fetch(searchName, page)
-        .then(response => {
-          this.setState(prev => ({
-            response: page === 1 ? response : [...prev.response, ...response],
-          }));
-        })
-        .catch(error => console.log(error))
-        .finally(() => this.setState({ isLoading: false }));
+  useEffect(() => {
+    if (!searchName || !page) {
+      return;
     }
-  }
+    setIsLoading(true);
+    fetch(searchName, page)
+      .then(response => {
+        if (response.length === 0) {
+          Notify.warning('Упс, ничего не нашли');
+        }
+        page === 1
+          ? setResponse(response)
+          : setResponse(prev => [...prev, ...response]);
+      })
+      .catch(error => console.log(error))
+      .finally(() => setIsLoading(false));
+  }, [page, searchName]);
 
-  handleFormSubmit = searchName => {
-    this.setState({ searchName, page: 1 });
-
-    // if (!!this.state.response) {
-    //   return Notify.warning('Фото не найдено');
-    // }
+  const handleFormSubmit = searchName => {
+    setSearchName(searchName);
+    setPage(1);
   };
 
-  handlLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handlLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  toggleModal = image => {
+  const toggleModal = image => {
     if (image) {
-      this.setState({ isModalOpen: true, modalImage: image });
+      setIsModalOpen(true);
+      setModalImage(image);
 
       return;
     }
-    this.setState({ isModalOpen: false, modalImage: '' });
+    setIsModalOpen(false);
+    setModalImage('');
   };
 
-  render() {
-    const { response, searchName } = this.state;
+  return (
+    <div className={app.app}>
+      <Searchbar onSubmit={handleFormSubmit} />
+      <ImageGallery toggleModal={toggleModal} response={response} />
+      {isLoading && <Loader />}
+      {!!response.length && !isLoading && <Button onClick={handlLoadMore} />}
 
-    return (
-      <div className={app.app}>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        <ImageGallery
-          toggleModal={this.toggleModal}
-          response={response}
-          searchName={searchName}
-        />
-        {this.state.isLoading && <Loader />}
-        {!!this.state.response.length && !this.state.isLoading && (
-          <Button onClick={this.handlLoadMore} />
-        )}
-
-        {this.state.isModalOpen && (
-          <Modal
-            toggleModal={this.toggleModal}
-            modalImage={this.state.modalImage}
-            // altTags={this.state.response.tags}
-          />
-        )}
-      </div>
-    );
-  }
+      {isModalOpen && (
+        <Modal toggleModal={toggleModal} modalImage={modalImage} />
+      )}
+    </div>
+  );
 }
